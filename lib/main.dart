@@ -55,6 +55,13 @@ class _MyHomePageState extends State<MyHomePage> {
     speedAccuracy: 0,
   );
 
+  final City badCity = City(
+    country: "Miracle",
+    latitude: 0,
+    longitude: 0,
+    name: "Unknown",
+  );
+
   late final Future<Position> _positionFuture;
 
   @override
@@ -62,6 +69,14 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
 
     _positionFuture = _getCurrentPosition();
+  }
+
+  String printLatitude(double latitude) {
+    return "${latitude.toStringAsFixed(3)}° ${latitude < 0 ? 'S' : 'N'}";
+  }
+
+  String printLongitude(double longitude) {
+    return "${longitude.toStringAsFixed(3)}° ${longitude < 0 ? 'W' : 'E'}";
   }
 
   Widget buildHeader(SharedPreferences prefs) {
@@ -111,30 +126,50 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (_, citySnapshot) {
               if (citySnapshot.hasData) {
                 final response = CityResponse.fromNetwork(citySnapshot.data);
-                final city = response.city!;
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      city.name,
-                      style: Theme.of(context).textTheme.headline1,
+                final city = response.city ?? badCity;
+                return Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: FittedBox(
+                      fit: BoxFit.fitWidth,
+                      child: Text(
+                        city.name,
+                        style: Theme.of(context).textTheme.headline1,
+                      ),
                     ),
-                    Row(
+                    trailing: InkWell(
+                      highlightColor: Colors.white,
+                      splashColor: Colors.white,
+                      customBorder: const CircleBorder(),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.bookmark,
+                          color: Colors.red,
+                        ),
+                      ),
+                      onTap: () {
+                        print("a");
+                      },
+                    ),
+                    subtitle: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          city.latitude.toString(),
+                          printLatitude(city.latitude),
                           style: Theme.of(context).textTheme.subtitle1,
                         ),
-                        const SizedBox(width: 4,),
+                        const SizedBox(
+                          width: 4,
+                        ),
                         Text(
-                          city.longitude.toString(),
+                          printLongitude(city.longitude),
                           style: Theme.of(context).textTheme.subtitle1,
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 );
               }
               return buildWaiter();
@@ -175,8 +210,8 @@ class _MyHomePageState extends State<MyHomePage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromARGB(255, 255, 131, 43),
-              Color.fromARGB(255, 236, 67, 0),
+              Color.fromARGB(255, 255, 139, 58),
+              Color.fromARGB(255, 255, 87, 19),
             ],
           ),
         ),

@@ -21,10 +21,10 @@ class City {
     Map<String, String> local = Map.from(map["local_names"]);
     return City(
       name: map["name"],
-      latitude: map["lat"],
-      longitude: map["lon"],
-      country: map["country"],
-      state: map["state"],
+      latitude: map["lat"] ?? 0,
+      longitude: map["lon"] ?? 0,
+      country: map["country"] ?? "",
+      state: map["state"] ?? "",
       localNames: local,
     );
   }
@@ -36,7 +36,7 @@ class CityResponse {
   CityResponse({this.city});
 
   CityResponse.fromNetwork(dynamic data) {
-    if (data is List) {
+    if (data is List && data.isNotEmpty) {
       city = City.fromMap(data[0] as Map<String, dynamic>);
     } else {
       city = null;

@@ -17,34 +17,25 @@ class City {
     this.state,
   });
 
-  factory City.fromMap(Map<String, dynamic> map) {
-    Map<String, String> local = Map.from(map["local_names"]);
-    return City(
-      name: map["name"],
-      latitude: map["lat"] ?? 0,
-      longitude: map["lon"] ?? 0,
-      country: map["country"] ?? "",
-      state: map["state"] ?? "",
-      localNames: local,
-    );
-  }
-}
-
-class CityResponse {
-  City? city;
-
-  CityResponse({this.city});
-
-  CityResponse.fromNetwork(dynamic data) {
+  factory City.fromNetwork(dynamic data) {
     if (data is List && data.isNotEmpty) {
-      city = City.fromMap(data[0] as Map<String, dynamic>);
+      final map = data[0] as Map<String, dynamic>;
+      final Map<String, String> local = Map.from(map["local_names"]);
+      return City(
+        name: map["name"],
+        latitude: map["lat"] ?? 0,
+        longitude: map["lon"] ?? 0,
+        country: map["country"] ?? "",
+        state: map["state"] ?? "",
+        localNames: local,
+      );
     } else {
-      city = null;
+      throw "Invalid network response";
     }
   }
 }
 
-class CityRequest extends ApiRequestAction<CityResponse> {
+class CityRequest extends ApiRequestAction<City> {
   final double latitude;
   final double longitude;
 
@@ -66,5 +57,5 @@ class CityRequest extends ApiRequestAction<CityResponse> {
   String get path => "geo/1.0/reverse";
 
   @override
-  ResponseBuilder<CityResponse> get responseBuilder => (data) => CityResponse.fromNetwork(data);
+  ResponseBuilder<City> get responseBuilder => (data) => City.fromNetwork(data);
 }

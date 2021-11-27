@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttw/models/city.dart';
+import 'package:ttw/models/forecast.dart';
 
 void main() {
   ApiRequestOptions.instance?.config(
@@ -63,12 +64,23 @@ class _MyHomePageState extends State<MyHomePage> {
   );
 
   late final Future<Position> _positionFuture;
+  Future<Forecast?>? _forecastFuture;
+  ForecastRequest? _forecastRequest;
 
   @override
   void initState() {
     super.initState();
 
     _positionFuture = _getCurrentPosition();
+  }
+
+  Future<Forecast?> _queryForecast(double longitude, double latitude) {
+    if (_forecastFuture == null) {
+      _forecastRequest = ForecastRequest(latitude: latitude, longitude: longitude);
+      _forecastFuture = _forecastRequest!.execute();
+    }
+
+    return _forecastFuture!;
   }
 
   String printLatitude(double latitude) {
@@ -121,56 +133,62 @@ class _MyHomePageState extends State<MyHomePage> {
             latitude: position.latitude,
             longitude: position.longitude,
           );
-          return FutureBuilder(
-            future: cityRequest.get(),
+          return FutureBuilder<City?>(
+            future: cityRequest.execute(),
             builder: (_, citySnapshot) {
               if (citySnapshot.hasData) {
-                final response = CityResponse.fromNetwork(citySnapshot.data);
-                final city = response.city ?? badCity;
-                return Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: FittedBox(
-                      fit: BoxFit.fitWidth,
-                      child: Text(
-                        city.name,
-                        style: Theme.of(context).textTheme.headline1,
-                      ),
-                    ),
-                    trailing: InkWell(
-                      highlightColor: Colors.white,
-                      splashColor: Colors.white,
-                      customBorder: const CircleBorder(),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4.0),
-                        child: Icon(
-                          Icons.bookmark,
-                          color: Colors.red,
+                if (citySnapshot.data != null) {
+                  final city = citySnapshot.data!;
+                  return Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: FittedBox(
+                        fit: BoxFit.fitWidth,
+                        child: Text(
+                          city.name,
+                          style: Theme.of(context).textTheme.headline1,
                         ),
                       ),
-                      onTap: () {
-                        print("a");
-                      },
+                      trailing: InkWell(
+                        highlightColor: Colors.white,
+                        splashColor: Colors.white,
+                        customBorder: const CircleBorder(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(
+                            Icons.bookmark,
+                            color: Colors.red,
+                          ),
+                        ),
+                        onTap: () {
+                          print("a");
+                        },
+                      ),
+                      subtitle: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            printLatitude(city.latitude),
+                            style: Theme.of(context).textTheme.subtitle1,
+                          ),
+                          const SizedBox(
+                            width: 4,
+                          ),
+                          Text(
+                            printLongitude(city.longitude),
+                            style: Theme.of(context).textTheme.subtitle1,
+                          ),
+                        ],
+                      ),
                     ),
-                    subtitle: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          printLatitude(city.latitude),
-                          style: Theme.of(context).textTheme.subtitle1,
-                        ),
-                        const SizedBox(
-                          width: 4,
-                        ),
-                        Text(
-                          printLongitude(city.longitude),
-                          style: Theme.of(context).textTheme.subtitle1,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                  );
+                } else {
+                  Fluttertoast.showToast(msg: "Invalid geocoding request!");
+                }
+              }
+              if (snapshot.hasError) {
+                Fluttertoast.showToast(msg: snapshot.error.toString());
               }
               return buildWaiter();
             },
@@ -189,7 +207,32 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget buildForecast(SharedPreferences prefs) {
-    return Container();
+    return FutureBuilder<Position>(
+      future: _positionFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final position = snapshot.data!;
+          return FutureBuilder<Forecast?>(
+            future: _queryForecast(position.longitude, position.latitude),
+            builder: (context, snapshotForecast) {
+              if (snapshotForecast.hasData) {
+                if (snapshotForecast.data != null) {
+                  final forecast = snapshotForecast.data!;
+                  return Container();
+                } else {
+                  Fluttertoast.showToast(msg: "Invalid forecast request!");
+                }
+              }
+              if (snapshot.hasError) {
+                Fluttertoast.showToast(msg: snapshot.error.toString());
+              }
+              return buildWaiter();
+            },
+          );
+        }
+        return buildWaiter();
+      },
+    );
   }
 
   Widget buildWaiter() {

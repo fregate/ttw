@@ -26,10 +26,27 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         textTheme: const TextTheme(
-          headline1: TextStyle(color: Colors.white, fontSize: 64),
-          bodyText1: TextStyle(color: Colors.white, fontWeight: FontWeight.normal),
-          caption: TextStyle(color: Colors.white, fontSize: 24),
-          subtitle1: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w300),
+          headline1: TextStyle(
+            color: Colors.white,
+            fontSize: 64,
+          ),
+          headline3: TextStyle(
+            color: Colors.white,
+            fontSize: 32,
+          ),
+          bodyText1: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.normal,
+          ),
+          caption: TextStyle(
+            color: Colors.white70,
+            fontSize: 24,
+          ),
+          subtitle1: TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w300,
+          ),
         ),
       ),
       home: const MyHomePage(),
@@ -55,7 +72,6 @@ class _MyHomePageState extends State<MyHomePage> {
     speed: 0,
     speedAccuracy: 0,
   );
-
   final City badCity = City(
     country: "Miracle",
     latitude: 0,
@@ -65,7 +81,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   late final Future<Position> _positionFuture;
   Future<Forecast?>? _forecastFuture;
-  ForecastRequest? _forecastRequest;
 
   @override
   void initState() {
@@ -75,11 +90,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Forecast?> _queryForecast(double longitude, double latitude) {
-    if (_forecastFuture == null) {
-      _forecastRequest = ForecastRequest(latitude: latitude, longitude: longitude);
-      _forecastFuture = _forecastRequest!.execute();
-    }
-
+    _forecastFuture ??= ForecastRequest(
+      latitude: latitude,
+      longitude: longitude,
+    ).execute();
     return _forecastFuture!;
   }
 
@@ -151,8 +165,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       trailing: InkWell(
-                        highlightColor: Colors.white,
-                        splashColor: Colors.white,
+                        highlightColor: Colors.white24,
+                        splashColor: Colors.white24,
                         customBorder: const CircleBorder(),
                         child: const Padding(
                           padding: EdgeInsets.all(4.0),
@@ -203,7 +217,144 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget buildSuggest(SharedPreferences prefs) {
-    return Container();
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Text(
+        "Here will be suggest",
+        style: Theme.of(context).textTheme.headline3,
+      ),
+    );
+  }
+
+  Widget weatherIcon(List<Weather> weather) {
+    return const Icon(
+      Icons.cloud_queue_sharp,
+      color: Colors.white70,
+    );
+  }
+
+  Widget buildHour(PeriodForecast hour) {
+    final dateStyle = Theme.of(context).textTheme.bodyText1!.copyWith(
+          fontSize: 12,
+          color: Colors.white70,
+        );
+    final tempStyle = Theme.of(context).textTheme.caption!.copyWith(
+          fontWeight: FontWeight.w300,
+        );
+    final date = Jiffy(hour.date);
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          date.isSame(Jiffy(), Units.HOUR)
+              ? Text(
+                  "Now",
+                  style: dateStyle,
+                )
+              : Text(
+                  date.j,
+                  style: dateStyle,
+                ),
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Text(
+              "${(hour.temperature.day).toStringAsFixed(1)}°",
+              style: tempStyle,
+            ),
+          ),
+          weatherIcon(hour.weather),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> buildHourly(Forecast forecast) {
+    if (forecast.hourly.isEmpty) {
+      return [Container()];
+    }
+
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Container(
+          height: 0.75,
+          color: Colors.white54,
+        ),
+      ),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            for (int i = 0; i < 7; i++) buildHour(forecast.hourly[i]),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Container(
+          height: 0.75,
+          color: Colors.white54,
+        ),
+      ),
+    ];
+  }
+
+  Widget buildDay(PeriodForecast day) {
+    final dateStyle = Theme.of(context).textTheme.bodyText1!.copyWith(
+          fontSize: 12,
+          color: Colors.white70,
+        );
+
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            Jiffy(day.date).MMMEd,
+            style: dateStyle,
+          )
+        ],
+      ),
+    );
+  }
+
+  List<Widget> buildDaily(Forecast forecast) {
+    // return forecast.daily.map((day) => buildDay(day)).toList();
+
+    // return SingleChildScrollView(
+    //   physics: const ScrollPhysics(),
+    //   child: Column(
+    //     children: forecast.daily.map((day) => buildDay(day)).toList(),
+    //   ),
+    // );
+
+    // return Expanded(
+    //   child: ListView.separated(
+    //     itemBuilder: (context, index) => buildDay(forecast.daily[index]),
+    //     separatorBuilder: (context, index) => const Divider(
+    //       color: Colors.white54,
+    //       height: 0.75,
+    //     ),
+    //     itemCount: forecast.daily.length,
+    //   ),
+    // );
+
+    return [
+      SizedBox(
+        height: 300,
+        child: ListView.separated(
+          itemBuilder: (context, index) => buildDay(forecast.daily[index]),
+          separatorBuilder: (context, index) => const Divider(
+            color: Colors.white54,
+            height: 0.75,
+          ),
+          itemCount: forecast.daily.length,
+        ),
+      ),
+    ];
   }
 
   Widget buildForecast(SharedPreferences prefs) {
@@ -218,7 +369,14 @@ class _MyHomePageState extends State<MyHomePage> {
               if (snapshotForecast.hasData) {
                 if (snapshotForecast.data != null) {
                   final forecast = snapshotForecast.data!;
-                  return Container();
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ...buildHourly(forecast),
+                        ...buildDaily(forecast),
+                      ],
+                    ),
+                  );
                 } else {
                   Fluttertoast.showToast(msg: "Invalid forecast request!");
                 }
@@ -243,41 +401,39 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return FractionallySizedBox(
-      heightFactor: 1.0,
-      widthFactor: 1.0,
-      child: Container(
-        padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.fromARGB(255, 255, 139, 58),
-              Color.fromARGB(255, 255, 87, 19),
-            ],
-          ),
+    final Size size = MediaQuery.of(context).size;
+    return Container(
+      height: size.height,
+      padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.fromARGB(255, 255, 139, 58),
+            Color.fromARGB(255, 255, 87, 19),
+          ],
         ),
-        child: FutureBuilder<SharedPreferences>(
-          future: SharedPreferences.getInstance(),
-          builder: (_, snapshot) {
-            if (snapshot.hasData) {
-              final prefs = snapshot.data!;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  buildHeader(prefs),
-                  buildPlace(prefs),
-                  buildSuggest(prefs),
-                  buildForecast(prefs)
-                ],
-              );
-            }
+      ),
+      child: FutureBuilder<SharedPreferences>(
+        future: SharedPreferences.getInstance(),
+        builder: (_, snapshot) {
+          if (snapshot.hasData) {
+            final prefs = snapshot.data!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                buildHeader(prefs),
+                buildPlace(prefs),
+                buildSuggest(prefs),
+                buildForecast(prefs)
+              ],
+            );
+          }
 
-            return buildWaiter();
-          },
-        ),
+          return buildWaiter();
+        },
       ),
     );
   }

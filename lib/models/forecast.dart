@@ -276,6 +276,7 @@ class ForecastRequest extends ApiRequestAction<Forecast> {
   @override
   Map<String, dynamic> get toMap => {
         "exclude": "minutely,alerts",
+        "units": "metric",
         "lat": latitude,
         "lon": longitude,
       };
